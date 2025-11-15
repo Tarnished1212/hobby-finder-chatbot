@@ -1,0 +1,405 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hobby Finder — React Preview (Fixed + Fun Facts)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--bg1:#243b6b;--bg2:#2f2b7a;--accent:#2563eb}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    #root{width:100%;max-width:1100px}
+    .frame{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:16px;box-shadow:0 20px 50px rgba(2,6,23,0.6);overflow:hidden}
+    .header{padding:16px 20px;display:flex;align-items:center;gap:14px;justify-content:space-between}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .dot{width:44px;height:44px;border-radius:10px;background:linear-gradient(45deg,#fff6,#fff2);display:flex;align-items:center;justify-content:center;color:#111;font-weight:700}
+    .panel{display:flex;gap:16px;padding:18px}
+    .chat{flex:1;display:flex;flex-direction:column;min-height:62vh;background:rgba(255,255,255,0.02);border-radius:12px;padding:16px;backdrop-filter:blur(6px)}
+    .messages{flex:1;overflow:auto;padding-right:6px}
+    .controls{display:flex;gap:10px;margin-top:12px;align-items:center}
+    .input{flex:1;padding:12px 14px;border-radius:12px;border:none;outline:none}
+    button{cursor:pointer;border-radius:10px;padding:10px 14px;border:none}
+    .btn-primary{background:var(--accent);color:white}
+    .btn-ghost{background:rgba(255,255,255,0.05);color:white;border:1px solid rgba(255,255,255,0.04)}
+    .bubble-bot{background:white;color:#0b1220;padding:12px;border-radius:14px;max-width:78%;box-shadow:0 6px 18px rgba(2,6,23,0.25);margin:10px 0}
+    .bubble-user{background:linear-gradient(90deg,var(--accent),#1e40af);color:white;padding:12px;border-radius:14px;max-width:78%;margin:10px 0;margin-left:auto;box-shadow:0 6px 18px rgba(2,6,23,0.35)}
+    .suggestion{background:white;padding:14px;border-radius:14px;color:#082032;margin:10px 0;box-shadow:0 8px 30px rgba(2,6,23,0.25)}
+    .meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;font-size:13px}
+    .meta{background:#f3f4f6;padding:8px;border-radius:8px;color:#111}
+    .sidebar{width:300px}
+    .favorites{background:rgba(255,255,255,0.03);padding:12px;border-radius:12px;color:#fff;max-height:58vh;overflow:auto}
+    .fav-item{background:#fff;padding:10px;border-radius:8px;color:#082032;margin-bottom:8px}
+    .small{font-size:13px;opacity:.85}
+    .action-row{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .action-btn{padding:8px 12px;border-radius:999px;border:none;background:linear-gradient(90deg,#2b6ce4,#1e40af);color:white;cursor:pointer}
+    .action-btn-ghost{padding:8px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.08);background:#eef2ff;color:#0b1220;cursor:pointer}
+    @media (max-width:900px){ .panel{flex-direction:column} .sidebar{width:100%} }
+  </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+function App(){
+  const HOBBIES = [
+    { id:'digital-painting', title:'Digital Painting — At Home', emoji:'🎨', short:'Digital painting (West African style)', description:'Start with a tablet or even a mouse. Great for creativity and gradual skill growth.', place:'Indoor', cost:'Medium', skill:'Intermediate', intensity:'Low', learning:'Easy' },
+    { id:'morning-yoga', title:'Morning Yoga — Gentle', emoji:'🧘', short:'Breath-focused routine', description:'15–30 minutes to wake your body and sharpen focus.', place:'Indoor', cost:'Low', skill:'Beginner', intensity:'Low', learning:'Easy' },
+    { id:'veggie-cooking', title:'Home Cooking — Veg Recipes', emoji:'🍳', short:'Simple vegetarian meals', description:'Learn spices and quick healthy recipes.', place:'Indoor', cost:'Low', skill:'Beginner', intensity:'Medium', learning:'Medium' },
+    { id:'street-photography', title:'Street Photography', emoji:'📷', short:'Capture candid city moments', description:'Walk, observe, and shoot — great for storytelling.', place:'Outdoor', cost:'Low', skill:'Intermediate', intensity:'Medium', learning:'Medium' },
+    { id:'gardening', title:'Urban Gardening', emoji:'🌿', short:'Grow herbs & veggies', description:'Perfect for balconies and small spaces.', place:'Outdoor', cost:'Low', skill:'Beginner', intensity:'Low', learning:'Easy' },
+    { id:'dance-cardio', title:'Dance Cardio', emoji:'💃', short:'High-energy dance workouts', description:'Fun, upbeat cardio fused with choreography.', place:'Indoor', cost:'Low', skill:'Beginner', intensity:'High', learning:'Medium' },
+    { id:'woodworking', title:'Basic Woodworking', emoji:'🪚', short:'Build small wood projects', description:'Learn measuring, cutting and finishing basics.', place:'Indoor', cost:'Medium', skill:'Intermediate', intensity:'Medium', learning:'Hard' },
+    { id:'guitar', title:'Guitar — Acoustic Basics', emoji:'🎸', short:'Strumming & simple songs', description:'Start with a few chords and play along.', place:'Indoor', cost:'Medium', skill:'Beginner', intensity:'Low', learning:'Medium' }
+  ];
+
+  // small fun facts per hobby (multiple facts each)
+  const FUN_FACTS = {
+    'digital-painting': ["Many pros combine traditional sketches with digital finishing.","Digital painting became widely popular with affordable tablets in the 2000s."],
+    'morning-yoga': ["Even 10 minutes daily improves focus.","Yoga can boost flexibility and reduce stress over time."],
+    'veggie-cooking': ["Toasting whole spices first releases more aroma.","Batch-cooking vegetables saves lots of time."],
+    'street-photography': ["Small prime lenses (35mm/50mm) are classic for street work.","Golden hour makes candid photos easier to light."],
+    'gardening': ["Tomatoes grow well in containers.","Vertical planters multiply yield in tiny spaces."],
+    'dance-cardio': ["Dance cardio can burn as many calories as running.","Learning choreography improves memory and coordination."],
+    'woodworking': ["Softwoods like pine are friendlier for beginners.","Sanding between coats gives a smoother finish."],
+    'guitar': ["Three chords let you play hundreds of songs.","Changing strings improves tone significantly."]
+  };
+
+  const [messages, setMessages] = useState([{ id:'m0', from:'bot', text:"Hey — ready to find hobbies you’ll actually love? Press '🤯 Surprise Me!' or 'Start Quiz' to begin." }]);
+  const [favorites, setFavorites] = useState(()=> JSON.parse(localStorage.getItem('hf_facts_favs')||'[]'));
+  const [usedFacts, setUsedFacts] = useState({}); // hobbyId -> set(indexes used)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [quizStep, setQuizStep] = useState(-1);
+  const [answers, setAnswers] = useState({});
+  const bottomRef = useRef(null);
+
+  const SYN = { indoor:['inside','indoor','home'], outdoor:['outside','outdoor','park','out'], beginner:['beginner','new','novice'], cheap:['cheap','budget','afford'] };
+
+  useEffect(()=> localStorage.setItem('hf_facts_favs', JSON.stringify(favorites)), [favorites]);
+  useEffect(()=> { if(bottomRef.current) bottomRef.current.scrollIntoView({behavior:'smooth'}); }, [messages]);
+
+  function pushMessage(msg){
+    setMessages(m=>[...m, msg]);
+  }
+  function pushBot(text, actions=[]){
+    pushMessage({ id:'b'+Date.now(), from:'bot', text, actions });
+  }
+  function pushUser(text){
+    pushMessage({ id:'u'+Date.now(), from:'user', text });
+  }
+
+  function getUnusedFact(hobbyId){
+    const pool = FUN_FACTS[hobbyId] || [];
+    const used = new Set(usedFacts[hobbyId] || []);
+    for(let i=0;i<pool.length;i++){
+      if(!used.has(i)){
+        // mark used
+        setUsedFacts(prev=> ({ ...prev, [hobbyId]: [...(prev[hobbyId]||[]), i] }));
+        return pool[i];
+      }
+    }
+    // all used => return a random one (no marking)
+    if(pool.length) return pool[Math.floor(Math.random()*pool.length)];
+    return null;
+  }
+
+  // detect simple preferences from free text
+  function detectPrefs(text){
+    const t = (text||'').toLowerCase();
+    const prefs = {};
+    for(const k in SYN) for(const w of SYN[k]) if(t.includes(w)) prefs[k]=true;
+    // map to quiz keys
+    const mapped = {};
+    if(prefs.outdoor) mapped.q1='Outdoor';
+    if(prefs.indoor) mapped.q1='Indoor';
+    if(prefs.beginner) mapped.q2='Beginner';
+    if(prefs.cheap) mapped.q6='Budget-friendly only';
+    return mapped;
+  }
+
+  function doSurprise(){
+    const it = HOBBIES[Math.floor(Math.random()*HOBBIES.length)];
+    pushSuggestion(it);
+  }
+
+  function pushSuggestion(item){
+    pushMessage({ id:'s'+Date.now(), from:'bot', suggestion:item });
+    // after suggestion show a human-style line + a fun fact (only one, non-spammy)
+    setTimeout(()=> {
+      const fact = getUnusedFact(item.id);
+      if(fact) pushBot(`${item.emoji} Also — ${fact}`);
+      else pushBot(`What do you think? I picked it because it fits ${item.place.toLowerCase()} preferences.`);
+    }, 220);
+  }
+
+  const QUIZ = [
+    { id:'q1', text:'Where would you prefer to do this?', options:['Indoor','Outdoor','Either'] },
+    { id:'q2', text:"What's your skill level?", options:['Beginner','Intermediate','Advanced'] },
+    { id:'q3', text:'How intense should it be?', options:['Low','Medium','High'] },
+    { id:'q4', text:'How much time can you commit weekly?', options:['<2 hrs','2-5 hrs','5-10 hrs','10+ hrs'] },
+    { id:'q5', text:'Solo or social?', options:['Solo','Social','Either'] },
+    { id:'q6', text:'How important is cost?', options:['Low priority','Moderate','Budget-friendly only'] },
+    { id:'q7', text:'Hands-on or digital?', options:['Hands-on','Digital','Either'] },
+    { id:'q8', text:'Is physical exertion okay?', options:['Yes','No','Light only'] },
+    { id:'q9', text:'Quick wins or long-term mastery?', options:['Quick wins','Long-term mastery','Both'] },
+    { id:'q10', text:'Any age/accessibility constraints?', options:['No','Yes - need low mobility','Yes - kid friendly'] },
+  ];
+
+  // Start quiz
+  function startQuiz(){
+    pushUser('Start Quiz');
+    setAnswers({});
+    setQuizStep(0);
+    pushBot('Awesome — long quiz mode! Answer the following to get tailored suggestions.', QUIZ[0].options);
+  }
+
+  // chooseOption does NOT push a user bubble — the caller should pushUser if necessary.
+  function chooseOption(option){
+    const q = QUIZ[quizStep] || { id:`q${quizStep+1}`, options:[] };
+    setAnswers(a=> ({ ...a, [q.id]: option }));
+    // micro reply + human followup
+    pushBot(emotionReply(option));
+    setTimeout(()=> pushBot("Nice — that helps. I'll narrow down picks based on that."), 220);
+
+    const next = quizStep + 1;
+    if(next < QUIZ.length){
+      setQuizStep(next);
+      setTimeout(()=> pushBot(QUIZ[next].text, QUIZ[next].options), 420);
+    } else {
+      setQuizStep(-1);
+      // Offer clickable counts as actions
+      setTimeout(()=> pushBot("Nice! How many suggestions would you like?", ['3','5','10']), 320);
+    }
+  }
+
+  function emotionReply(opt){
+    const map = { Indoor:'Cozy choice — I like it!', Outdoor:'Fresh air — great!', Beginner:'Perfect starting point!', Intermediate:'Solid level!', Advanced:'A real challenge — exciting!', Low:'Easy-going — relaxing.', Medium:'Balanced and fun.', High:'Get ready to sweat!' };
+    return map[opt] || 'Nice choice!';
+  }
+
+  // deliver suggestions
+  function deliverSuggestions(count=3){
+    pushBot(`Got it — fetching ${count} suggestion${count>1?'s':''}…`);
+    // score function
+    const score = (h)=>{
+      let s=0;
+      if(answers.q1 && answers.q1 !== 'Either' && h.place.toLowerCase().includes(answers.q1.toLowerCase())) s+=2;
+      if(answers.q2 && h.skill.toLowerCase().includes((answers.q2||'').toLowerCase())) s+=2;
+      if(answers.q3 && h.intensity.toLowerCase().includes((answers.q3||'').toLowerCase())) s+=2;
+      return s;
+    };
+    const scored = HOBBIES.map(h=>({h,s:score(h)})).sort((a,b)=>b.s-a.s);
+    const picks = scored.filter(x=>x.s>0).map(x=>x.h);
+    const source = picks.length? picks : HOBBIES;
+    for(let i=0;i<Math.min(count, source.length); i++){
+      setTimeout(()=> pushSuggestion(source[i]), i*260);
+    }
+  }
+
+  // Save favorite
+  function saveFavorite(item){
+    if(!favorites.includes(item.id)) setFavorites(prev=> [...prev, item.id]);
+    pushBot(`✅ Saved '${item.title}' to your favorites!`);
+  }
+
+  // User typed message handler
+  function handleSend(){
+    const text = input.trim();
+    if(!text) return;
+    setInput('');
+    pushUser(text);
+
+    // If quiz active: try to match option; if matched, chooseOption (no duplicate user bubble)
+    if(quizStep >= 0){
+      const q = QUIZ[quizStep];
+      const match = q.options.find(o => text.toLowerCase().includes(o.toLowerCase()));
+      if(match){
+        // chooseOption without extra user bubble (we already pushed user bubble)
+        chooseOption(match);
+        return;
+      }
+      // accept free text as answer
+      chooseOption(text);
+      return;
+    }
+
+    // Detect hobby mention
+    const h = HOBBIES.find(hh => text.toLowerCase().includes(hh.title.toLowerCase()) || text.toLowerCase().includes(hh.short.toLowerCase()));
+    if(h){
+      setTimeout(()=> pushSuggestion(h), 200);
+      return;
+    }
+
+    // Detect preferences
+    const prefs = detectPrefs(text);
+    if(Object.keys(prefs).length){
+      setAnswers(a=>({...a, ...prefs}));
+      pushBot("Nice — got that. I'll use those preferences to find matches.🙂");
+      setTimeout(()=> deliverSuggestions(3), 300);
+      return;
+    }
+
+    // Commands
+    if(text.toLowerCase().includes('surprise') || text.toLowerCase().includes('recommend')){
+      doSurprise(); return;
+    }
+    if(text.toLowerCase().includes('quiz') || text.toLowerCase().includes('start quiz')){
+      startQuiz(); return;
+    }
+
+    // fallback
+    pushBot("Got it — tell me a bit more or press 'Start Quiz' / '🤯 Surprise Me!'.🙂");
+  }
+
+  // handle action button clicks (action label is string like "3","Indoor","Start Quiz")
+  function handleAction(action){
+    // push a user bubble for the clicked action (single source of truth)
+    pushUser(action);
+
+    // numeric counts
+    if(['3','5','10'].includes(action)){
+      deliverSuggestions(parseInt(action,10));
+      return;
+    }
+    // quiz options (if quiz running)
+    if(quizStep >= 0){
+      chooseOption(action);
+      return;
+    }
+    // direct commands
+    if(action === '🤯' || action.toLowerCase().includes('surprise')){ doSurprise(); return; }
+    if(action.toLowerCase().includes('start')){ startQuiz(); return; }
+    // fallback: try to treat as preference/hobby search
+    // if action matches a hobby title exactly -> open suggestion
+    const hobby = HOBBIES.find(h => h.title === action || h.short === action);
+    if(hobby) { pushSuggestion(hobby); return; }
+    // otherwise just reply
+    pushBot("Okay — got it!");
+  }
+
+  function openFavorite(id){
+    const it = HOBBIES.find(h=>h.id===id);
+    if(it) pushSuggestion(it);
+  }
+
+  // rendering functions
+  function renderMessage(msg){
+    if(msg.suggestion){
+      const it = msg.suggestion;
+      return (
+        <div key={msg.id} className="suggestion">
+          <div style={{display:'flex',gap:12,alignItems:'center'}}>
+            <div style={{fontSize:32}}>{it.emoji}</div>
+            <div>
+              <h4 style={{margin:0}}>{it.title}</h4>
+              <div className="small" style={{marginTop:6}}>{it.short}</div>
+            </div>
+          </div>
+          <p style={{marginTop:10,marginBottom:6}}>{it.description}</p>
+          <div className="meta-grid">
+            <div className="meta"><b>Place</b><div>{it.place}</div></div>
+            <div className="meta"><b>Cost</b><div>{it.cost}</div></div>
+            <div className="meta"><b>Skill</b><div>{it.skill}</div></div>
+            <div className="meta"><b>Intensity</b><div>{it.intensity}</div></div>
+            <div className="meta" style={{gridColumn:'span 3'}}><b>Learning</b><div>{it.learning}</div></div>
+          </div>
+          <div style={{marginTop:10,display:'flex',gap:8}}>
+            <button className="action-btn-ghost" onClick={()=> saveFavorite(it)}>❤️ Save</button>
+            <button className="action-btn-ghost" onClick={()=> { pushBot('Got it — another coming up!'); setTimeout(()=> doSurprise(),160); }}>Another</button>
+          </div>
+        </div>
+      );
+    }
+
+    // regular bubble with optional actions
+    if(msg.from === 'bot'){
+      return (
+        <div key={msg.id} className="bubble-bot">
+          <div style={{whiteSpace:'pre-wrap'}}>{msg.text}</div>
+          {msg.actions && msg.actions.length > 0 && (
+            <div className="action-row">
+              {msg.actions.map((a, idx)=>(
+                <button key={idx} className="action-btn" onClick={()=> handleAction(a)}>{a}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      return <div key={msg.id} className="bubble-user">{msg.text}</div>;
+    }
+  }
+
+  return (
+    <div className="frame">
+      <div className="header">
+        <div className="logo">
+          <div className="dot">HF</div>
+          <div>
+            <div style={{fontWeight:700}}>Hobby Finder</div>
+            <div className="small">Personal picks — curated for you</div>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <div className="small">Made by 23BMH1141</div>
+          <button className="btn-ghost" onClick={()=> setSidebarOpen(s=>!s)}>{sidebarOpen ? 'Close' : 'Favorites'}</button>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="chat">
+          <div className="messages">
+            {messages.map(m=> <div key={m.id} style={{display:'flex',flexDirection:'column'}}>{renderMessage(m)}</div>)}
+            <div ref={bottomRef}></div>
+          </div>
+
+          <div className="controls">
+            <input className="input" placeholder="Type — e.g. 'outside', 'beginner', 'cheap', 'gardening' or 'Start Quiz'"
+              value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=> e.key === 'Enter' && handleSend()} />
+            <button className="btn-primary" onClick={handleSend}>Send</button>
+            <button className="btn-ghost" onClick={()=> { pushUser('Start Quiz'); startQuiz(); }}>Start Quiz</button>
+            <button className="btn-ghost" onClick={()=> { pushUser('Surprise Me'); doSurprise(); }}>🤯</button>
+          </div>
+
+          <div style={{padding:12}} className="small">Tip: type preferences mid-chat (e.g., "I prefer outside and cheap") and I'll use them. Click the suggested buttons to respond faster.</div>
+        </div>
+
+        {sidebarOpen && (
+          <div className="sidebar">
+            <div style={{padding:12}}>
+              <div style={{fontWeight:700}}>Saved Favorites ❤️</div>
+              <div className="favorites" style={{marginTop:8}}>
+                {favorites.length===0 ? <div className="small">No favorites yet — save a suggestion.</div> :
+                  favorites.map(fid=>{
+                    const it = HOBBIES.find(h=>h.id===fid);
+                    if(!it) return null;
+                    return (
+                      <div key={fid} className="fav-item">
+                        <div style={{fontWeight:600}}>{it.title}</div>
+                        <div className="small" style={{margin:'6px 0'}}>{it.short}</div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="btn-ghost" onClick={()=> openFavorite(fid)}>Open</button>
+                          <button className="btn-ghost" onClick={()=> setFavorites(prev => prev.filter(x=>x!==fid))}>Remove</button>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+              <div className="small" style={{marginTop:10,opacity:.8}}>Stored locally</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
